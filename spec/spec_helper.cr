@@ -1,6 +1,6 @@
 require "spec"
 require "../src/carbon_sendgrid_adapter"
 require "./support/*"
-require "dotenv"
+require "lucky_env"
 
-Dotenv.load
+LuckyEnv.load(".env")
