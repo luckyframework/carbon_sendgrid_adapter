@@ -2,7 +2,7 @@ require "http"
 require "json"
 require "carbon"
 
-class Carbon::SendgridAdapter < Carbon::Adapter
+class Carbon::SendGridAdapter < Carbon::Adapter
   private getter api_key : String
   private getter? sandbox : Bool
 
