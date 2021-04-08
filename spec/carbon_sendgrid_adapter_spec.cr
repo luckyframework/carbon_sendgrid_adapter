@@ -1,7 +1,7 @@
 require "./spec_helper"
 
 describe Carbon::SendGridAdapter do
-  {% unless flag?("skip-integration") %}
+  {% if flag?("with-integration") %}
     describe "deliver_now" do
       it "delivers the email successfully" do
         send_email_to_send_grid text_body: "text template",

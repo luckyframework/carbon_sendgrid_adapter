@@ -49,4 +49,4 @@ jobs:
       - name: Install shards
         run: shards install
       - name: Run tests
-        run: crystal spec -D skip-integration
+        run: crystal spec
