@@ -18,9 +18,12 @@ jobs:
           - false
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental }}
-    container: crystallang/crystal:${{ matrix.crystal_version }}-alpine
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+      - name: Install Crystal
+        uses: oprypin/install-crystal@v1
+        with:
+          crystal: ${{ matrix.crystal_version }}
       - name: Install shards
         run: shards install
       - name: Format
@@ -38,14 +41,12 @@ jobs:
           - false
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental }}
-    container: crystallang/crystal:${{ matrix.crystal_version }}-alpine
     steps:
       - uses: actions/checkout@v2
-      - name: Cache Crystal
-        uses: actions/cache@v1
+      - name: Install Crystal
+        uses: oprypin/install-crystal@v1
         with:
-          path: ~/.cache/crystal
-          key: ${{ runner.os }}-crystal
+          crystal: ${{ matrix.crystal_version }}
       - name: Install shards
         run: shards install
       - name: Run tests
