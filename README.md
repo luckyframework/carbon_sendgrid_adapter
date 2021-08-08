@@ -24,11 +24,11 @@ Update your `config/email.cr` file to use SendGrid
 require "carbon_sendgrid_adapter"
 
 BaseEmail.configure do |settings|
- if Lucky::Env.production?
+ if LuckyEnv.production?
    send_grid_key = send_grid_key_from_env
    settings.adapter = Carbon::SendGridAdapter.new(api_key: send_grid_key)
  else
-  settings.adapter = Carbon::DevAdapter.enw
+  settings.adapter = Carbon::DevAdapter.new
  end
 end
 
