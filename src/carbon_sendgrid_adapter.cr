@@ -3,14 +3,35 @@ require "json"
 require "carbon"
 
 class Carbon::SendGridAdapter < Carbon::Adapter
-  private getter api_key : String
+  getter authentication_strategy : AuthenticationStrategy
   private getter? sandbox : Bool
 
-  def initialize(@api_key, @sandbox = false)
+  def initialize(api_key : String, @sandbox = false)
+    @authentication_strategy = AuthenticationStrategy.new(api_key)
+  end
+
+  def initialize(username : String, password : String, @sandbox = false)
+    @authentication_strategy = AuthenticationStrategy.new(username, password)
   end
 
   def deliver_now(email : Carbon::Email)
-    Carbon::SendGridAdapter::Email.new(email, api_key, sandbox?).deliver
+    Carbon::SendGridAdapter::Email.new(email, authentication_strategy, sandbox?).deliver
+  end
+
+  class AuthenticationStrategy
+    private getter api_key : String?
+    private getter username : String?
+    private getter password : String?
+
+    def initialize(@username, @password)
+    end
+
+    def initialize(@api_key)
+    end
+
+    def authenticate_with_basic_auth?
+      api_key.nil?
+    end
   end
 
   class Email
@@ -19,7 +40,7 @@ class Carbon::SendGridAdapter < Carbon::Adapter
     private getter email, api_key
     private getter? sandbox : Bool
 
-    def initialize(@email : Carbon::Email, @api_key : String, @sandbox = false)
+    def initialize(@email : Carbon::Email, @authentication_strategy : AuthenticationStrategy, @sandbox = false)
     end
 
     def deliver
@@ -126,7 +147,11 @@ class Carbon::SendGridAdapter < Carbon::Adapter
     private def client : HTTP::Client
       @_client ||= HTTP::Client.new(BASE_URI, port: 443, tls: true).tap do |client|
         client.before_request do |request|
-          request.headers["Authorization"] = "Bearer #{api_key}"
+          if authentication_strategy.authenticate_with_basic_auth?
+            client.basic_auth(authentication_strategy.username, authentication_strategy.password)
+          else
+            request.headers["Authorization"] = "Bearer #{authentication_strategy.api_key}"
+          end
           request.headers["Content-Type"] = "application/json"
         end
       end

@@ -108,11 +108,23 @@ describe Carbon::SendGridAdapter do
       ]
     end
   end
+
+  describe "#authentication_strategy" do
+    it "sets correct strategy for api key" do
+      adapter = Carbon::SendGridAdapter.new(api_key: "TESTING")
+      adapter.authentication_strategy.authenticate_with_basic_auth?.should eq(false)
+    end
+
+    it "sets correct strategy for basic auth" do
+      adapter = Carbon::SendGridAdapter.new(username: "TESTER", password: "123467")
+      adapter.authentication_strategy.authenticate_with_basic_auth?.should eq(true)
+    end
+  end
 end
 
 private def params_for(**email_attrs)
   email = FakeEmail.new(**email_attrs)
-  Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+  Carbon::SendGridAdapter::Email.new(email, Carbon::SendGridAdapter::AuthenticationStrategy.new("fake_key")).params
 end
 
 private def send_email_to_send_grid(**email_attrs)
