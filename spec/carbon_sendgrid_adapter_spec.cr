@@ -107,6 +107,30 @@ describe Carbon::SendGridAdapter do
         {type: "text/html", value: "html"},
       ]
     end
+
+    it "allows for a custom template_id" do
+      custom_email = CustomTemplateEmail.new
+      params = Carbon::SendGridAdapter::Email.new(custom_email, api_key: "fake_key").params
+
+      params[:template_id].should eq("welcome-abc-123")
+
+      normal_email = FakeEmail.new
+      params = Carbon::SendGridAdapter::Email.new(normal_email, api_key: "fake_key").params
+
+      params[:template_id].should eq(nil)
+    end
+
+    it "allows for custom template data" do
+      custom_email = CustomTemplateEmail.new
+      params = Carbon::SendGridAdapter::Email.new(custom_email, api_key: "fake_key").params
+
+      params[:personalizations].first[:dynamic_template_data].should_not eq(nil)
+
+      normal_email = FakeEmail.new
+      params = Carbon::SendGridAdapter::Email.new(normal_email, api_key: "fake_key").params
+
+      params[:personalizations].first.has_key?(:dynamic_template_data).should eq(false)
+    end
   end
 end
 

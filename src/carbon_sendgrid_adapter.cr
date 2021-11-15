@@ -1,6 +1,7 @@
 require "http"
 require "json"
 require "carbon"
+require "./carbon_sendgrid_extensions"
 
 class Carbon::SendGridAdapter < Carbon::Adapter
   private getter api_key : String
@@ -40,6 +41,7 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         content:          content,
         headers:          headers,
         reply_to:         reply_to_params,
+        template_id:      email.template_id,
         mail_settings:    {sandbox_mode: {enable: sandbox?}},
       }
     end
@@ -68,11 +70,12 @@ class Carbon::SendGridAdapter < Carbon::Adapter
 
     private def personalizations
       {
-        to:  to_send_grid_address(email.to),
-        cc:  to_send_grid_address(email.cc),
-        bcc: to_send_grid_address(email.bcc),
+        to:                    to_send_grid_address(email.to),
+        cc:                    to_send_grid_address(email.cc),
+        bcc:                   to_send_grid_address(email.bcc),
+        dynamic_template_data: email.dynamic_template_data,
       }.to_h.reject do |_key, value|
-        value.empty?
+        value.nil? || value.empty?
       end
     end
 
