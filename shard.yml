@@ -1,10 +1,10 @@
 name: carbon_sendgrid_adapter
-version: 0.1.0
+version: 0.2.0
 
 authors:
   - Matthew McGarvey <matthewmcgarvey14@gmail.com>
 
-crystal: '>= 0.36.1, < 2.0.0'
+crystal: '>= 1.0.0'
 
 license: MIT
 
