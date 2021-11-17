@@ -1,6 +1,7 @@
 require "http"
 require "json"
 require "carbon"
+require "./errors"
 require "./carbon_sendgrid_extensions"
 
 class Carbon::SendGridAdapter < Carbon::Adapter
@@ -24,9 +25,10 @@ class Carbon::SendGridAdapter < Carbon::Adapter
     end
 
     def deliver
-      client.post(MAIL_SEND_PATH, body: params.to_json).tap do |response|
+      body = params.to_json
+      client.post(MAIL_SEND_PATH, body: body).tap do |response|
         unless response.success?
-          raise JSON.parse(response.body).inspect
+          raise SendGridResponseFailedError.new(response.body)
         end
       end
     end
@@ -34,21 +36,42 @@ class Carbon::SendGridAdapter < Carbon::Adapter
     # :nodoc:
     # Used only for testing
     def params
-      {
-        personalizations: [personalizations],
-        subject:          email.subject,
-        from:             from,
-        content:          content,
-        headers:          headers,
-        reply_to:         reply_to_params,
-        template_id:      email.template_id,
-        mail_settings:    {sandbox_mode: {enable: sandbox?}},
-      }
+      data = {
+        "personalizations" => [personalizations],
+        "subject"          => email.subject,
+        "from"             => from,
+        "headers"          => headers,
+        "reply_to"         => reply_to_params,
+        "mail_settings"    => {sandbox_mode: {enable: sandbox?}},
+      }.compact
+
+      if template_id = email.template_id
+        data = data.merge!({"template_id" => template_id})
+      else
+        if content.size > 0
+          data = data.merge({"content" => content})
+        else
+          raise SendGridInvalidTemplateError.new <<-ERROR
+          Unless a valid template_id is provided, a template is required.
+
+          Try this...
+
+            ▸ templates html, text
+            ▸ def template_id
+                "d-xxxxxxxxxxxxxx"
+              end
+
+          Read more on Sending emails https://luckyframework.org/guides/emails/sending-emails-with-carbon
+          ERROR
+        end
+      end
+
+      data
     end
 
-    private def reply_to_params
-      if reply_to_address
-        {email: reply_to_address}
+    private def reply_to_params : Hash(String, String)?
+      if reply = reply_to_address
+        {"email" => reply}
       end
     end
 
@@ -56,7 +79,7 @@ class Carbon::SendGridAdapter < Carbon::Adapter
       reply_to_header.values.first?
     end
 
-    private def reply_to_header
+    private def reply_to_header : Hash(String, String)
       email.headers.select do |key, _value|
         key.downcase == "reply-to"
       end
@@ -68,58 +91,55 @@ class Carbon::SendGridAdapter < Carbon::Adapter
       end
     end
 
+    # The type is left off this due to how complex
+    # `dynamic_template_data` can be.
     private def personalizations
       {
-        to:                    to_send_grid_address(email.to),
-        cc:                    to_send_grid_address(email.cc),
-        bcc:                   to_send_grid_address(email.bcc),
-        dynamic_template_data: email.dynamic_template_data,
-      }.to_h.reject do |_key, value|
-        value.nil? || value.empty?
+        "to"                    => to_send_grid_address(email.to),
+        "cc"                    => to_send_grid_address(email.cc),
+        "bcc"                   => to_send_grid_address(email.bcc),
+        "dynamic_template_data" => email.dynamic_template_data,
+      }.compact.reject do |_key, value|
+        value.empty?
       end
     end
 
-    private def to_send_grid_address(addresses : Array(Carbon::Address))
+    private def to_send_grid_address(addresses : Array(Carbon::Address)) : Array(Hash(String, String))
       addresses.map do |carbon_address|
         {
-          name:  carbon_address.name,
-          email: carbon_address.address,
-        }
+          "name"  => carbon_address.name,
+          "email" => carbon_address.address,
+        }.compact
       end
     end
 
-    private def from
-      {
-        email: email.from.address,
-        name:  email.from.name,
-      }.to_h.reject do |_key, value|
-        value.nil?
-      end
+    private def from : Hash(String, String)
+      to_send_grid_address([email.from]).first
     end
 
-    private def content
+    private def content : Array(Hash(String, String))
       [
         text_content,
         html_content,
       ].compact
     end
 
-    private def text_content
+    private def text_content : Hash(String, String)?
       body = email.text_body
       if body && !body.empty?
         {
-          type:  "text/plain",
-          value: body,
+          "type"  => "text/plain",
+          "value" => body,
         }
       end
     end
 
-    private def html_content
+    private def html_content : Hash(String, String)?
       body = email.html_body
       if body && !body.empty?
         {
-          type:  "text/html",
-          value: body,
+          "type"  => "text/html",
+          "value" => body,
         }
       end
     end
