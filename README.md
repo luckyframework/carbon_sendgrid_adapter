@@ -48,11 +48,8 @@ SendGrid allows you to use [Dynamic Transactional Templates](https://docs.sendgr
 sending your emails. These templates are designed and created inside of the
 SendGrid website.
 
-This shard allows you to use the dynamic templates in place of building
-the HTML and Text temapltes in your application.
-
-You must define `template_id`, and `dynamic_template_data` methods in your
-email class that will use the dynamic template.
+Define a `template_id`, and `dynamic_template_data` method in your
+email class to use the dynamic template.
 
 1. Login to SendGrid
 2. Select Email API > Dynamic Templates
@@ -96,6 +93,9 @@ class WelcomeEmail < BaseEmail
   subject "Welcome - Confirm Your Email"
 end
 ```
+
+NOTE: SendGrid requires you to either define `template_id` or use the `templates` macro
+to generate an email body content.
 
 ## Contributing
 
