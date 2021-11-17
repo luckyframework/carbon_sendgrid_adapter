@@ -42,6 +42,61 @@ private def raise_missing_key_message
 end
 ```
 
+### Sending Dynamic Template emails
+
+SendGrid allows you to use [Dynamic Transactional Templates](https://docs.sendgrid.com/ui/sending-email/how-to-send-an-email-with-dynamic-transactional-templates) when
+sending your emails. These templates are designed and created inside of the
+SendGrid website.
+
+This shard allows you to use the dynamic templates in place of building
+the HTML and Text temapltes in your application.
+
+You must define `template_id`, and `dynamic_template_data` methods in your
+email class that will use the dynamic template.
+
+1. Login to SendGrid
+2. Select Email API > Dynamic Templates
+3. Create a new template
+4. Copy the "Template-ID" value for that template.
+5. Update your email class
+
+```crystal
+# Using built-in templates
+class WelcomeEmail < BaseEmail
+  def initialize(@user : User)
+  end
+
+  to @user
+  subject "Welcome - Confirm Your Email"
+  templates html, text
+end
+```
+
+```crystal
+# Using dynamic templates
+class WelcomeEmail < BaseEmail
+  def initialize(@user : User)
+  end
+
+  # This must be the String value of your ID
+  def template_id
+    "d-12345abcd6543dcbaffeedd1122aabb"
+  end
+
+  # This is optional. Define a Hash with your
+  # custom handlebars variables
+  def dynamic_template_data
+    {
+      "username" => @user.username,
+      "confirmEmailUrl" => "https://myapp.com/confirm?token=..."
+    }
+  end
+
+  to @user
+  subject "Welcome - Confirm Your Email"
+end
+```
+
 ## Contributing
 
 1. Fork it (<https://github.com/your-github-user/carbon_sendgrid_adapter/fork>)
