@@ -18,8 +18,8 @@ jobs:
         experimental:
           - false
         include:
-          crystal_version: nightly
-          experimental: true
+          - crystal_version: nightly
+            experimental: true
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental }}
     steps:
@@ -45,8 +45,8 @@ jobs:
         experimental:
           - false
         include:
-          crystal_version: nightly
-          experimental: true
+          - crystal_version: nightly
+            experimental: true
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental }}
     steps:
