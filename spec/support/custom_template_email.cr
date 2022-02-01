@@ -15,6 +15,13 @@ class CustomTemplateEmail < Carbon::Email
     "welcome-abc-123"
   end
 
+  def asm_data
+    {
+      "group_id"          => "12345",
+      "groups_to_display" => ["12345"],
+    }
+  end
+
   def dynamic_template_data
     {
       "total" => "$ 239.85",

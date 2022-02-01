@@ -43,6 +43,7 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         "from"             => from,
         "headers"          => headers,
         "reply_to"         => reply_to_params,
+        "asm"              => asm_data,
         "mail_settings"    => {sandbox_mode: {enable: sandbox?}},
       }.compact
 
@@ -116,6 +117,12 @@ class Carbon::SendGridAdapter < Carbon::Adapter
 
     private def from : Hash(String, String)
       to_send_grid_address([email.from]).first
+    end
+
+    private def asm_data : Hash(String, String)?
+      if asm_data = email.asm
+        {"asm" => asm_data}
+      end
     end
 
     private def content : Array(Hash(String, String))
