@@ -17,6 +17,13 @@ module Carbon::SendGridExtensions
   def dynamic_template_data
     nil
   end
+
+  # Define the group ids to determine how to
+  # handle unsubscribes.
+  # https://docs.sendgrid.com/ui/sending-email/unsubscribe-groups
+  def asm
+    nil
+  end
 end
 
 class Carbon::Email

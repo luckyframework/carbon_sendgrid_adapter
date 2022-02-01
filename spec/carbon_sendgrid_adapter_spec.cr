@@ -142,6 +142,18 @@ describe Carbon::SendGridAdapter do
 
       params["personalizations"].as(Array).first.has_key?("dynamic_template_data").should eq(false)
     end
+
+    it "passes over asm data on how to handle unsubscribes" do
+      custom_email = CustomTemplateEmail.new
+      params = Carbon::SendGridAdapter::Email.new(custom_email, api_key: "fake_key").params
+
+      params["personalizations"].as(Array).first["dynamic_template_data"].should_not eq(nil)
+
+      email = FakeEmail.new(text_body: "0")
+      params = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+
+      params["personalizations"].as(Array).first.has_key?("asm").should eq(false)
+    end
   end
 end
 
