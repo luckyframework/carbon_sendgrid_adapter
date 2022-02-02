@@ -17,8 +17,8 @@ class CustomTemplateEmail < Carbon::Email
 
   def asm_data
     {
-      "group_id"          => "12345",
-      "groups_to_display" => ["12345"],
+      "group_id"          => 12345,
+      "groups_to_display" => [12345],
     }
   end
 
