@@ -125,6 +125,12 @@ class Carbon::SendGridAdapter < Carbon::Adapter
       to_send_grid_address([email.from]).first
     end
 
+    private def asm_data : Hash(String, String)?
+      if asm_data = email.asm
+        {"asm" => asm_data}
+      end
+    end
+
     private def content : Array(Hash(String, String))
       [
         text_content,
