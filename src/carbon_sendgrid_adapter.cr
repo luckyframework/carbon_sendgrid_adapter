@@ -43,9 +43,15 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         "from"             => from,
         "headers"          => headers,
         "reply_to"         => reply_to_params,
-        "asm"              => asm_data,
+        "asm"              => {"group_id" => 0, "groups_to_display" => [] of Int32},
         "mail_settings"    => {sandbox_mode: {enable: sandbox?}},
       }.compact
+
+      if asm_data = email.asm
+        data = data.merge!({"asm" => asm_data})
+      else
+        data.delete("asm")
+      end
 
       if template_id = email.template_id
         data = data.merge!({"template_id" => template_id})
