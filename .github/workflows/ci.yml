@@ -12,9 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         crystal_version:
-          - 1.0.0
-          - 1.1.0
-          - 1.2.0
+          - latest
         experimental:
           - false
         include:
@@ -25,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Crystal
-        uses: oprypin/install-crystal@v1
+        uses: crystal-lang/install-crystal@v1
         with:
           crystal: ${{ matrix.crystal_version }}
       - name: Install shards
@@ -39,9 +37,8 @@ jobs:
       fail-fast: false
       matrix:
         crystal_version:
-          - 1.0.0
-          - 1.1.0
-          - 1.2.0
+          - 1.4.0
+          - latest
         experimental:
           - false
         include:
@@ -52,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Crystal
-        uses: oprypin/install-crystal@v1
+        uses: crystal-lang/install-crystal@v1
         with:
           crystal: ${{ matrix.crystal_version }}
       - name: Install shards
