@@ -1,6 +1,7 @@
 require "http"
 require "json"
 require "carbon"
+require "base64"
 require "./errors"
 require "./carbon_sendgrid_extensions"
 
@@ -35,7 +36,6 @@ class Carbon::SendGridAdapter < Carbon::Adapter
     end
 
     # :nodoc:
-    # Used only for testing
     def params
       data = {
         "personalizations" => [personalizations],
@@ -45,6 +45,7 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         "reply_to"         => reply_to_params,
         "asm"              => {"group_id" => 0, "groups_to_display" => [] of Int32},
         "mail_settings"    => {sandbox_mode: {enable: sandbox?}},
+        "attachments"      => attachments,
       }.compact
 
       if asm_data = email.asm
@@ -136,6 +137,19 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         text_content,
         html_content,
       ].compact
+    end
+
+    private def attachments : Array(Hash(String, String))
+      files = [] of Hash(String, String)
+      email.attachments.map do |attachment|
+        case attachment
+        in AttachFile, ResourceFile
+          files.push({"content" => Base64.encode(File.read(attachment[:file_path])), "type" => attachment[:mime_type].to_s, "filename" => attachment[:file_name].to_s, "disposition" => "attachment"})
+        in AttachIO, ResourceIO
+          files.push({"content" => Base64.encode(attachment[:io].to_s), "type" => attachment[:mime_type].to_s, "filename" => attachment[:file_name].to_s, "disposition" => "attachment"})
+        end
+      end
+      files
     end
 
     private def text_content : Hash(String, String)?
