@@ -154,6 +154,15 @@ describe Carbon::SendGridAdapter do
 
       params["personalizations"].as(Array).first.has_key?("asm").should eq(false)
     end
+
+    it "handles attachments" do
+      email = FakeEmail.new(text_body: "0")
+      params = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+      attachments = params["attachments"].as(Array)
+      attachments.size.should eq(1)
+      attachments.first["filename"].should eq("contract.pdf")
+      Base64.decode_string(attachments.first["content"].to_s).should eq("Sign here")
+    end
   end
 end
 
