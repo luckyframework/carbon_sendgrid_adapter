@@ -45,8 +45,11 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         "reply_to"         => reply_to_params,
         "asm"              => {"group_id" => 0, "groups_to_display" => [] of Int32},
         "mail_settings"    => {sandbox_mode: {enable: sandbox?}},
-        "attachments"      => attachments,
       }.compact
+
+      if !email.attachments.empty?
+        data = data.merge!({"attachments" => attachments})
+      end
 
       if asm_data = email.asm
         data = data.merge!({"asm" => asm_data})
@@ -141,7 +144,7 @@ class Carbon::SendGridAdapter < Carbon::Adapter
 
     private def attachments : Array(Hash(String, String))
       files = [] of Hash(String, String)
-      email.attachments.map do |attachment|
+      email.attachments.each do |attachment|
         case attachment
         in AttachFile, ResourceFile
           files.push({"content" => Base64.encode(File.read(attachment[:file_path])), "type" => attachment[:mime_type].to_s, "filename" => attachment[:file_name].to_s, "disposition" => "attachment"})
