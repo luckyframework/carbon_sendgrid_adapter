@@ -156,7 +156,7 @@ describe Carbon::SendGridAdapter do
     end
 
     it "handles attachments" do
-      email = FakeEmail.new(text_body: "0")
+      email = FakeEmailWithAttachments.new(text_body: "0")
       params = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
       attachments = params["attachments"].as(Array)
       attachments.size.should eq(1)

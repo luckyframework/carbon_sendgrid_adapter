@@ -45,10 +45,12 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         "reply_to"         => reply_to_params,
         "asm"              => {"group_id" => 0, "groups_to_display" => [] of Int32},
         "mail_settings"    => {sandbox_mode: {enable: sandbox?}},
+        "attachments"      => attachments,
       }.compact
 
-      if !email.attachments.empty?
-        data = data.merge!({"attachments" => attachments})
+      # If Sendgrid sees an empty attachments array, it'll return an error
+      if data["attachments"].empty?
+        data.delete("attachments")
       end
 
       if asm_data = email.asm
