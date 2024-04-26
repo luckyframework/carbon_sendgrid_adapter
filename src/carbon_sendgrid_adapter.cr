@@ -48,6 +48,11 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         "attachments"      => attachments,
       }.compact
 
+      # If Sendgrid sees an empty attachments array, it'll return an error
+      if data["attachments"].empty?
+        data.delete("attachments")
+      end
+
       if asm_data = email.asm
         data = data.merge!({"asm" => asm_data})
       else
@@ -141,7 +146,7 @@ class Carbon::SendGridAdapter < Carbon::Adapter
 
     private def attachments : Array(Hash(String, String))
       files = [] of Hash(String, String)
-      email.attachments.map do |attachment|
+      email.attachments.each do |attachment|
         case attachment
         in AttachFile, ResourceFile
           files.push({"content" => Base64.encode(File.read(attachment[:file_path])), "type" => attachment[:mime_type].to_s, "filename" => attachment[:file_name].to_s, "disposition" => "attachment"})

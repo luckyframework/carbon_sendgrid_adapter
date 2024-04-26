@@ -1,4 +1,4 @@
-class FakeEmail < Carbon::Email
+class FakeEmailWithAttachments < Carbon::Email
   getter text_body, html_body
 
   def initialize(
@@ -18,4 +18,13 @@ class FakeEmail < Carbon::Email
   cc @cc
   bcc @bcc
   subject @subject
+  attachment contract
+
+  def contract
+    {
+      io:        IO::Memory.new("Sign here"),
+      file_name: "contract.pdf",
+      mime_type: "application/pdf",
+    }
+  end
 end
