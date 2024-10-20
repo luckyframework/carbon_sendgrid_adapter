@@ -6,7 +6,7 @@ require "./errors"
 require "./carbon_sendgrid_extensions"
 
 class Carbon::SendGridAdapter < Carbon::Adapter
-  VERSION = "0.5.1"
+  VERSION = "0.6.0"
   private getter api_key : String
   private getter? sandbox : Bool
 
