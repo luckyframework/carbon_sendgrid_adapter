@@ -1,5 +1,5 @@
 name: carbon_sendgrid_adapter
-version: 0.5.1
+version: 0.6.0
 
 authors:
   - Matthew McGarvey <matthewmcgarvey14@gmail.com>
@@ -11,10 +11,10 @@ license: MIT
 dependencies:
   carbon:
     github: luckyframework/carbon
-    version: ~> 0.5.1
+    version: ~> 0.6.0
   habitat:
     github: luckyframework/habitat
-    version: ~> 0.4.8
+    version: ~> 0.4.9
 
 development_dependencies:
   lucky_env:
