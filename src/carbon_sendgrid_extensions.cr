@@ -24,6 +24,13 @@ module Carbon::SendGridExtensions
   def asm
     nil
   end
+
+  # Tell Sendgrid to send the email at this time.
+  # Value should be a unix timestamp integer
+  # https://www.twilio.com/docs/sendgrid/for-developers/sending-email/personalizations
+  def send_at
+    nil
+  end
 end
 
 class Carbon::Email

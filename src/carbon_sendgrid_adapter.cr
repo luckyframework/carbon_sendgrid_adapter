@@ -46,6 +46,7 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         "asm"              => {"group_id" => 0, "groups_to_display" => [] of Int32},
         "mail_settings"    => {sandbox_mode: {enable: sandbox?}},
         "attachments"      => attachments,
+        "send_at"          => email.send_at,
       }.compact
 
       # If Sendgrid sees an empty attachments array, it'll return an error
