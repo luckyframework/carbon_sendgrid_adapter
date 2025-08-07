@@ -7,7 +7,7 @@ class CustomTemplateEmail < Carbon::Email
     @headers = {} of String => String,
     @subject = "subject",
     @text_body : String? = nil,
-    @html_body : String? = nil
+    @html_body : String? = nil,
   )
   end
 
