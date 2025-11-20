@@ -37,8 +37,9 @@ class Carbon::SendGridAdapter < Carbon::Adapter
 
     # :nodoc:
     def params
+      # Build base data hash with subject included by default
       data = {
-        "personalizations" => [personalizations],
+        "personalizations" => personalizations_array,
         "subject"          => email.subject,
         "from"             => from,
         "headers"          => headers,
@@ -47,6 +48,12 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         "mail_settings"    => {sandbox_mode: {enable: sandbox?}},
         "attachments"      => attachments,
       }.compact
+
+      # Remove subject from root level if using bulk personalizations
+      # (bulk personalizations have per-recipient subjects)
+      if email.bulk_personalizations
+        data.delete("subject")
+      end
 
       # If Sendgrid sees an empty attachments array, it'll return an error
       if data["attachments"].empty?
@@ -102,6 +109,17 @@ class Carbon::SendGridAdapter < Carbon::Adapter
     private def headers : Hash(String, String)
       email.headers.reject do |key, _value|
         key.downcase == "reply-to"
+      end
+    end
+
+    # Returns the personalizations array for SendGrid API.
+    # If bulk_personalizations is defined, use that for bulk sending.
+    # Otherwise, build a single personalization from email attributes.
+    private def personalizations_array
+      if bulk = email.bulk_personalizations
+        bulk
+      else
+        [personalizations]
       end
     end
 
