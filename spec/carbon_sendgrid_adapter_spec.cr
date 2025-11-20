@@ -163,6 +163,65 @@ describe Carbon::SendGridAdapter do
       attachments.first["filename"].should eq("contract.pdf")
       Base64.decode_string(attachments.first["content"].to_s).should eq("Sign here")
     end
+
+    it "supports bulk email sending with multiple personalizations" do
+      users = [
+        {email: "user1@example.com", name: "Alice", discount: "10%"},
+        {email: "user2@example.com", name: "Bob", discount: "20%"},
+        {email: "user3@example.com", name: "Charlie", discount: "15%"},
+      ]
+      email = BulkEmail.new(users: users)
+      params = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+
+      personalizations = params["personalizations"].as(Array)
+      personalizations.size.should eq(3)
+
+      # Check first personalization
+      first = personalizations[0]
+      first["to"].should eq([{"email" => "user1@example.com", "name" => "Alice"}])
+      first["subject"].should eq("Hello Alice!")
+      first["dynamic_template_data"].should eq({"name" => "Alice", "discount" => "10%"})
+
+      # Check second personalization
+      second = personalizations[1]
+      second["to"].should eq([{"email" => "user2@example.com", "name" => "Bob"}])
+      second["subject"].should eq("Hello Bob!")
+      second["dynamic_template_data"].should eq({"name" => "Bob", "discount" => "20%"})
+
+      # Check third personalization
+      third = personalizations[2]
+      third["to"].should eq([{"email" => "user3@example.com", "name" => "Charlie"}])
+      third["subject"].should eq("Hello Charlie!")
+      third["dynamic_template_data"].should eq({"name" => "Charlie", "discount" => "15%"})
+    end
+
+    it "does not include root subject when using bulk personalizations" do
+      users = [
+        {email: "user1@example.com", name: "Alice", discount: "10%"},
+      ]
+      email = BulkEmail.new(users: users)
+      params = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+
+      params.has_key?("subject").should eq(false)
+    end
+
+    it "includes subject at root level for non-bulk emails" do
+      email = FakeEmail.new(text_body: "0", subject: "Test Subject")
+      params = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+
+      params["subject"].should eq("Test Subject")
+    end
+
+    it "uses template_id with bulk personalizations" do
+      users = [
+        {email: "user1@example.com", name: "Alice", discount: "10%"},
+      ]
+      email = BulkEmail.new(users: users)
+      params = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+
+      params["template_id"].should eq("d-bulk-template-123")
+      params.has_key?("content").should eq(false)
+    end
   end
 end
 

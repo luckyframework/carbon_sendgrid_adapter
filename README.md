@@ -97,6 +97,69 @@ end
 NOTE: SendGrid requires you to either define `template_id` or use the `templates` macro
 to generate an email body content.
 
+### Sending Bulk Emails
+
+SendGrid's [Personalizations API](https://www.twilio.com/docs/sendgrid/for-developers/sending-email/personalizations) allows you to send customized emails to multiple recipients in a single API request. Each recipient can receive different content, subjects, and template data.
+
+To use bulk email sending, define a `bulk_personalizations` method in your email class that returns an array of personalization hashes:
+
+```crystal
+class BulkPromotionEmail < BaseEmail
+  def initialize(@customers : Array(Customer))
+  end
+
+  from Carbon::Address.new("promotions@myapp.com")
+
+  # When using bulk_personalizations, the standard to/cc/bcc/subject
+  # methods are not used - each personalization defines its own recipients
+  to [] of Carbon::Address
+  subject "Promotion" # This will be ignored
+
+  def template_id
+    "d-promotion-template-123"
+  end
+
+  def bulk_personalizations
+    @customers.map do |customer|
+      {
+        "to" => [
+          {
+            "email" => customer.email,
+            "name" => customer.name
+          }
+        ],
+        "subject" => "Special Offer for #{customer.name}!",
+        "dynamic_template_data" => {
+          "name" => customer.name,
+          "discount_code" => customer.discount_code,
+          "discount_amount" => customer.discount_amount
+        }
+      }
+    end
+  end
+end
+
+# Send to multiple customers at once
+BulkPromotionEmail.new(customers).deliver
+```
+
+#### Personalization Options
+
+Each personalization hash can include:
+
+- `"to"` (required): Array of recipient hashes with `"email"` and optional `"name"`
+- `"cc"` (optional): Array of CC recipient hashes
+- `"bcc"` (optional): Array of BCC recipient hashes
+- `"subject"` (optional): Custom subject line for this recipient
+- `"dynamic_template_data"` (optional): Template variables for this recipient
+- `"send_at"` (optional): Unix timestamp for scheduled sending
+
+**Important Notes:**
+- Maximum 1,000 personalizations per API request
+- Each personalization must have at least one `"to"` recipient
+- When using `bulk_personalizations`, the root-level `subject` is ignored
+- Works with both dynamic templates (`template_id`) and standard templates
+
 ## Contributing
 
 1. Fork it (<https://github.com/luckyframework/carbon_sendgrid_adapter/fork>)
