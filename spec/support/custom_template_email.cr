@@ -7,7 +7,7 @@ class CustomTemplateEmail < Carbon::Email
     @headers = {} of String => String,
     @subject = "subject",
     @text_body : String? = nil,
-    @html_body : String? = nil
+    @html_body : String? = nil,
   )
   end
 
@@ -15,10 +15,10 @@ class CustomTemplateEmail < Carbon::Email
     "welcome-abc-123"
   end
 
-  def asm_data
+  def asm
     {
-      "group_id"          => 12345,
-      "groups_to_display" => [12345],
+      "group_id"          => 1234,
+      "groups_to_display" => [1234],
     }
   end
 

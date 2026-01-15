@@ -1,4 +1,4 @@
-class FakeEmailWithAttachments < Carbon::Email
+class EmailWithSendGridFeatures < Carbon::Email
   getter text_body, html_body
 
   def initialize(
@@ -13,18 +13,27 @@ class FakeEmailWithAttachments < Carbon::Email
   )
   end
 
+  def template_id
+    "d-1234567890"
+  end
+
+  def dynamic_template_data
+    {
+      "name" => "Test User",
+    }
+  end
+
+  def categories : Array(String)
+    ["welcome", "onboarding", "transactional"]
+  end
+
+  def send_at : Int64
+    1704067200_i64 # 2024-01-01 00:00:00 UTC
+  end
+
   from @from
   to @to
   cc @cc
   bcc @bcc
   subject @subject
-  attachment contract
-
-  def contract
-    {
-      io:        IO::Memory.new("Sign here"),
-      file_name: "contract.pdf",
-      mime_type: "application/pdf",
-    }
-  end
 end
