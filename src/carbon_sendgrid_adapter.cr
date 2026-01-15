@@ -27,15 +27,10 @@ class Carbon::SendGridAdapter < Carbon::Adapter
     end
 
     def deliver
-      # Merge params with extra_params for JSON serialization
+      # Merge core params with SendGrid-specific options
       json_data = JSON.parse(params.to_json).as_h
-      extra_params.each do |key, value|
-        case value
-        when Array(String)
-          json_data[key] = JSON::Any.new(value.map { |v| JSON::Any.new(v) })
-        when Int64
-          json_data[key] = JSON::Any.new(value)
-        end
+      sendgrid_options.each do |key, value|
+        json_data[key] = value
       end
       body = json_data.to_json
 
@@ -47,6 +42,7 @@ class Carbon::SendGridAdapter < Carbon::Adapter
     end
 
     # :nodoc:
+    # Core email structure - SendGrid-specific options handled separately in sendgrid_options
     def params
       data = {
         "personalizations" => [personalizations],
@@ -54,7 +50,6 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         "from"             => from,
         "headers"          => headers,
         "reply_to"         => reply_to_params,
-        "asm"              => {"group_id" => 0, "groups_to_display" => [] of Int32},
         "mail_settings"    => {sandbox_mode: {enable: sandbox?}},
         "attachments"      => attachments,
       }.compact
@@ -64,17 +59,29 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         data.delete("attachments")
       end
 
+      data
+    end
+
+    # :nodoc:
+    # All SendGrid-specific optional fields consolidated here.
+    # These are merged into the JSON body in deliver to handle flexible typing
+    # and keep the core params method clean.
+    def sendgrid_options
+      options = {} of String => JSON::Any
+
+      # ASM (unsubscribe groups)
+      # https://docs.sendgrid.com/ui/sending-email/unsubscribe-groups
       if asm_data = email.asm
-        data = data.merge!({"asm" => asm_data})
-      else
-        data.delete("asm")
+        options["asm"] = JSON.parse(asm_data.to_json)
       end
 
+      # Template ID or content (required: one or the other)
+      # https://docs.sendgrid.com/ui/sending-email/how-to-send-an-email-with-dynamic-transactional-templates
       if template_id = email.template_id
-        data = data.merge!({"template_id" => template_id})
+        options["template_id"] = JSON::Any.new(template_id)
       else
         if content.size > 0
-          data = data.merge({"content" => content})
+          options["content"] = JSON.parse(content.to_json)
         else
           raise SendGridInvalidTemplateError.new <<-ERROR
           Unless a valid template_id is provided, a template is required.
@@ -91,24 +98,19 @@ class Carbon::SendGridAdapter < Carbon::Adapter
         end
       end
 
-      data
-    end
-
-    # :nodoc:
-    # Additional parameters that need flexible typing (categories, send_at)
-    # These are merged into the JSON body separately in deliver
-    def extra_params
-      extras = {} of String => Array(String) | Int64
-
+      # Categories for analytics
+      # https://docs.sendgrid.com/ui/analytics-and-reporting/categories
       if categories = email.categories
-        extras["categories"] = categories
+        options["categories"] = JSON::Any.new(categories.map { |c| JSON::Any.new(c) })
       end
 
+      # Scheduled send time
+      # https://docs.sendgrid.com/ui/sending-email/scheduling-parameters
       if send_at = email.send_at
-        extras["send_at"] = send_at
+        options["send_at"] = JSON::Any.new(send_at)
       end
 
-      extras
+      options
     end
 
     private def reply_to_params : Hash(String, String)?
@@ -157,12 +159,6 @@ class Carbon::SendGridAdapter < Carbon::Adapter
 
     private def from : Hash(String, String)
       to_send_grid_address([email.from]).first
-    end
-
-    private def asm_data : Hash(String, String)?
-      if asm_data = email.asm
-        {"asm" => asm_data}
-      end
     end
 
     private def content : Array(Hash(String, String))

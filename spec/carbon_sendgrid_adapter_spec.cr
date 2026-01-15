@@ -18,10 +18,10 @@ describe Carbon::SendGridAdapter do
   {% end %}
 
   describe "errors" do
-    it "raises SendGridInvalidTemplateError if no template is defined in params" do
+    it "raises SendGridInvalidTemplateError if no template is defined" do
       expect_raises(Carbon::SendGridInvalidTemplateError) do
         email = FakeEmail.new
-        Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+        Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").sendgrid_options
       end
     end
   end
@@ -112,24 +112,24 @@ describe Carbon::SendGridAdapter do
     end
 
     it "sets the content" do
-      params_for(text_body: "text")["content"].should eq [{"type" => "text/plain", "value" => "text"}]
-      params_for(html_body: "html")["content"].should eq [{"type" => "text/html", "value" => "html"}]
-      params_for(text_body: "text", html_body: "html")["content"].should eq [
+      sendgrid_options_for(text_body: "text")["content"].should eq JSON.parse([{"type" => "text/plain", "value" => "text"}].to_json)
+      sendgrid_options_for(html_body: "html")["content"].should eq JSON.parse([{"type" => "text/html", "value" => "html"}].to_json)
+      sendgrid_options_for(text_body: "text", html_body: "html")["content"].should eq JSON.parse([
         {"type" => "text/plain", "value" => "text"},
         {"type" => "text/html", "value" => "html"},
-      ]
+      ].to_json)
     end
 
     it "allows for a custom template_id" do
       custom_email = CustomTemplateEmail.new
-      params = Carbon::SendGridAdapter::Email.new(custom_email, api_key: "fake_key").params
+      options = Carbon::SendGridAdapter::Email.new(custom_email, api_key: "fake_key").sendgrid_options
 
-      params["template_id"].should eq("welcome-abc-123")
+      options["template_id"].should eq(JSON::Any.new("welcome-abc-123"))
 
       normal_email = FakeEmail.new(text_body: "0")
-      params = Carbon::SendGridAdapter::Email.new(normal_email, api_key: "fake_key").params
+      options = Carbon::SendGridAdapter::Email.new(normal_email, api_key: "fake_key").sendgrid_options
 
-      params.has_key?("template_id").should eq(false)
+      options.has_key?("template_id").should eq(false)
     end
 
     it "allows for custom template data" do
@@ -146,14 +146,14 @@ describe Carbon::SendGridAdapter do
 
     it "passes over asm data on how to handle unsubscribes" do
       custom_email = CustomTemplateEmail.new
-      params = Carbon::SendGridAdapter::Email.new(custom_email, api_key: "fake_key").params
+      options = Carbon::SendGridAdapter::Email.new(custom_email, api_key: "fake_key").sendgrid_options
 
-      params["personalizations"].as(Array).first["dynamic_template_data"].should_not eq(nil)
+      options["asm"].should eq(JSON.parse({"group_id" => 1234, "groups_to_display" => [1234]}.to_json))
 
       email = FakeEmail.new(text_body: "0")
-      params = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+      options = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").sendgrid_options
 
-      params["personalizations"].as(Array).first.has_key?("asm").should eq(false)
+      options.has_key?("asm").should eq(false)
     end
 
     it "handles attachments" do
@@ -166,32 +166,61 @@ describe Carbon::SendGridAdapter do
     end
 
     describe "sendgrid specific features" do
-      it "includes categories in extra_params when defined" do
+      it "includes categories in sendgrid_options when defined" do
         email = EmailWithSendGridFeatures.new(text_body: "0")
-        extra = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").extra_params
+        options = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").sendgrid_options
 
-        extra["categories"].should eq(["welcome", "onboarding", "transactional"])
+        options["categories"].should eq(JSON.parse(["welcome", "onboarding", "transactional"].to_json))
       end
 
       it "does not include categories when not defined" do
         email = FakeEmail.new(text_body: "0")
-        extra = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").extra_params
+        options = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").sendgrid_options
 
-        extra.has_key?("categories").should eq(false)
+        options.has_key?("categories").should eq(false)
       end
 
-      it "includes send_at in extra_params when defined" do
+      it "includes send_at in sendgrid_options when defined" do
         email = EmailWithSendGridFeatures.new(text_body: "0")
-        extra = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").extra_params
+        options = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").sendgrid_options
 
-        extra["send_at"].should eq(1704067200_i64)
+        options["send_at"].should eq(JSON::Any.new(1704067200_i64))
       end
 
       it "does not include send_at when not defined" do
         email = FakeEmail.new(text_body: "0")
-        extra = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").extra_params
+        options = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").sendgrid_options
 
-        extra.has_key?("send_at").should eq(false)
+        options.has_key?("send_at").should eq(false)
+      end
+
+      it "includes asm in sendgrid_options when defined" do
+        custom_email = CustomTemplateEmail.new
+        options = Carbon::SendGridAdapter::Email.new(custom_email, api_key: "fake_key").sendgrid_options
+
+        options["asm"].should eq(JSON.parse({"group_id" => 1234, "groups_to_display" => [1234]}.to_json))
+      end
+
+      it "does not include asm when not defined" do
+        email = FakeEmail.new(text_body: "0")
+        options = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").sendgrid_options
+
+        options.has_key?("asm").should eq(false)
+      end
+
+      it "includes template_id in sendgrid_options when defined" do
+        custom_email = CustomTemplateEmail.new
+        options = Carbon::SendGridAdapter::Email.new(custom_email, api_key: "fake_key").sendgrid_options
+
+        options["template_id"].should eq(JSON::Any.new("welcome-abc-123"))
+      end
+
+      it "includes content in sendgrid_options when template_id not defined" do
+        email = FakeEmail.new(text_body: "hello")
+        options = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").sendgrid_options
+
+        options["content"].should eq(JSON.parse([{"type" => "text/plain", "value" => "hello"}].to_json))
+        options.has_key?("template_id").should eq(false)
       end
     end
   end
@@ -200,6 +229,11 @@ end
 private def params_for(**email_attrs)
   email = FakeEmail.new(**email_attrs)
   Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").params
+end
+
+private def sendgrid_options_for(**email_attrs)
+  email = FakeEmail.new(**email_attrs)
+  Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").sendgrid_options
 end
 
 private def send_email_to_send_grid(**email_attrs)
