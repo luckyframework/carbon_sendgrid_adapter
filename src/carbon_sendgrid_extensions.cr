@@ -24,6 +24,20 @@ module Carbon::SendGridExtensions
   def asm
     nil
   end
+
+  # Define categories for your email to organize
+  # and track analytics by category.
+  # https://docs.sendgrid.com/ui/analytics-and-reporting/categories
+  def categories : Array(String)?
+    nil
+  end
+
+  # Define a unix timestamp to schedule when
+  # the email should be sent.
+  # https://docs.sendgrid.com/ui/sending-email/scheduling-parameters
+  def send_at : Int64?
+    nil
+  end
 end
 
 class Carbon::Email

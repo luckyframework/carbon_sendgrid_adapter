@@ -27,7 +27,18 @@ class Carbon::SendGridAdapter < Carbon::Adapter
     end
 
     def deliver
-      body = params.to_json
+      # Merge params with extra_params for JSON serialization
+      json_data = JSON.parse(params.to_json).as_h
+      extra_params.each do |key, value|
+        case value
+        when Array(String)
+          json_data[key] = JSON::Any.new(value.map { |v| JSON::Any.new(v) })
+        when Int64
+          json_data[key] = JSON::Any.new(value)
+        end
+      end
+      body = json_data.to_json
+
       client.post(MAIL_SEND_PATH, body: body).tap do |response|
         unless response.success?
           raise SendGridResponseFailedError.new(response.body)
@@ -81,6 +92,23 @@ class Carbon::SendGridAdapter < Carbon::Adapter
       end
 
       data
+    end
+
+    # :nodoc:
+    # Additional parameters that need flexible typing (categories, send_at)
+    # These are merged into the JSON body separately in deliver
+    def extra_params
+      extras = {} of String => Array(String) | Int64
+
+      if categories = email.categories
+        extras["categories"] = categories
+      end
+
+      if send_at = email.send_at
+        extras["send_at"] = send_at
+      end
+
+      extras
     end
 
     private def reply_to_params : Hash(String, String)?

@@ -1,4 +1,5 @@
 require "./spec_helper"
+require "./support/email_with_sendgrid_features"
 
 describe Carbon::SendGridAdapter do
   {% if flag?("with-integration") %}
@@ -162,6 +163,36 @@ describe Carbon::SendGridAdapter do
       attachments.size.should eq(1)
       attachments.first["filename"].should eq("contract.pdf")
       Base64.decode_string(attachments.first["content"].to_s).should eq("Sign here")
+    end
+
+    describe "sendgrid specific features" do
+      it "includes categories in extra_params when defined" do
+        email = EmailWithSendGridFeatures.new(text_body: "0")
+        extra = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").extra_params
+
+        extra["categories"].should eq(["welcome", "onboarding", "transactional"])
+      end
+
+      it "does not include categories when not defined" do
+        email = FakeEmail.new(text_body: "0")
+        extra = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").extra_params
+
+        extra.has_key?("categories").should eq(false)
+      end
+
+      it "includes send_at in extra_params when defined" do
+        email = EmailWithSendGridFeatures.new(text_body: "0")
+        extra = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").extra_params
+
+        extra["send_at"].should eq(1704067200_i64)
+      end
+
+      it "does not include send_at when not defined" do
+        email = FakeEmail.new(text_body: "0")
+        extra = Carbon::SendGridAdapter::Email.new(email, api_key: "fake_key").extra_params
+
+        extra.has_key?("send_at").should eq(false)
+      end
     end
   end
 end
